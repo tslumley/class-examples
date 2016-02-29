@@ -1,0 +1,78 @@
+---
+title: "Read this and work out what it's doing"
+author: "Thomas Lumley, ID 5551212"
+date: "29 February 2016"
+output: pdf_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+crashdata<-read.csv("~/racing-crashes.csv")
+```
+These data show the number of crashes, injuries, and deaths where the police listed 'racing' as one of the contributing causes of the crash. They were released by the office of Judith Collins, Police Minister, to confirm that a 2009 law change allowing crushing of the offenders' cars was effective. We're going to see how much the data support the claim.
+
+First, we want to look at graphs. R Markdown lets you embed plots, for example:
+
+```{r, echo=FALSE}
+plot(crashes~year,data=crashdata,type="o",col="blue")
+lines(injured~year,data=crashdata,type="o",col="purple")
+```
+
+The default y-axis isn't wide enough for all the data, so we need to extend it manually
+
+```{r, echo=FALSE}
+plot(crashes~year,data=crashdata,type="o",col="blue",ylim=c(0,120))
+lines(injured~year,data=crashdata,type="o",col="purple")
+lines(deaths~year,data=crashdata,type="o",col="red")
+```
+
+The law changed in 2009, so we could fit a model to pre-2009 and post-2009
+```{r}
+plot(injured~year,data=crashdata,type="o",col="blue",ylim=c(0,120))
+pre_model <- lm(injured~year, data=subset(crashdata, year<=2009))
+post_model <- lm(injured~year, data=subset(crashdata, year>=2009))
+lines(2001:2009,fitted(pre_model),lty=2)
+lines(2009:2014,fitted(post_model),lty=2)
+```
+
+It looks like a better fit has a change in 2007
+```{r}
+plot(injured~year,data=crashdata,type="o",col="blue",ylim=c(0,120))
+pre7_model <- lm(injured~year, data=subset(crashdata, year<=2007))
+post7_model <- lm(injured~year, data=subset(crashdata, year>=2007))
+lines(2001:2007,fitted(pre7_model),lty=2,col="orange")
+lines(2007:2014,fitted(post7_model),lty=2, col="orange")
+```
+
+We can force the lines to meet up and use a single model for each one. You will see these *linear regression splines* again in a future lab
+
+```{r}
+crashdata$pre9 <- with(crashdata, pmin(2009, year))
+crashdata$post9 <- with(crashdata, pmax(2009, year))
+crashdata$pre7 <- with(crashdata, pmin(2007, year))
+crashdata$post7 <- with(crashdata, pmax(2007, year))
+
+change7model <- lm(injured~pre7+post7,data=crashdata)
+change9model <- lm(injured~pre9+post9,data=crashdata)
+plot(injured~year,data=crashdata,type="o",col="blue",ylim=c(0,120))
+lines(2001:2014,fitted(change7model),lty=3)
+lines(2001:2014,fitted(change9model), col="orange",lty=3)
+```
+
+We can look at what's going on using maths. Suppose
+$$Y=\alpha+\beta_1 \min(\mathrm{year},2007)+\beta_2\max(\mathrm{year},2007)$$
+and look at what happens if we increase the $\mathrm{year}$ variable a little bit from $t$ to $t+\epsilon$.  If $t$ and $t+\epsilon$ are less than 2007, the first term and the third term don't change, and the second term changes by $\beta_1\epsilon$. If they are both greater than 2007, the first and second terms don't change and the third term changes by $\beta_2\epsilon$.  If $t$ is little bit below 2007 and $t+\epsilon$ is a little bit above, the first term doesn't change, the second term changes by less than $\beta_1\epsilon$ and the third term changes by less than $\beta_2\epsilon$.  Together, that means the slope of the fitted curve is $\beta_1$ for times before 2007, $\beta_2$ for times after 2007, and that the lines meet up at 2007.
+
+
+We'd like to have a formal assessment of which model is better. Later in the semester, we will cover ways to compare these models and this code will then make sense:
+```{r}
+AIC(change7model)
+AIC(change9model)
+```
+The model changing in 2007 fits the data better in a relevant statistical sense as well as visually.
+
+In a more complete analysis we'd also want to compare the trends to overall trends in road crashes (which turns out not to change the conclusions) and perhaps to some other sorts of crime.  However, while the data do show a drop in crashes due to racing, it seems to have happened a couple of years before the law change. The data do not provide much support for the law change.
+

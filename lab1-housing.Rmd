@@ -1,0 +1,64 @@
+---
+title: 'Home ownership: just for old people?'
+author: "Thomas Lumley"
+date: "29 February 2016"
+output: pdf_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.  Later, we'll give you a template to use for assignments; today's examples are just to give you something to play around with.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+housing <- read.csv("~/housing-agecohort.csv")
+```
+These are data on home ownership by age group for the 2001, 2006, and 2013 census.  First, what are the variables?
+
+```{r}
+summary(housing)
+```
+
+`Year` is the census year, `agegp` is the age group, `agemid` is the midpoint of that age group, `pctown` is the percentage who own or partly own their home, `where` is `AKL` for Auckland or `RONZ` for Rest Of New Zealand, and `cohort` attempts to match up the same group of people: if the 2011 census had been held in 2011, `cohort` would just have been age in 2011. 
+
+
+Let's draw some pictures. You might not have seen the `lattice` package before:
+
+```{r, echo=FALSE}
+library(lattice)
+xyplot(pctown~agemid|where, groups=year,data=housing,type="b",pch=19,
+       xlab="age",ylab="% own or partly own")
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. 
+
+Each curve shows percentage of home ownership as a function of age during one census year. The blue line is 2001; the purple line is 2006; the green line is 2013. You can see home ownership has decreased at the same age, and the decrease is larger in Auckland.
+
+```{r, echo=FALSE}
+library(lattice)
+xyplot(pctown~agemid|year, groups=where,data=housing,type="b",pch=19,
+       xlab="age",ylab="% own or partly own")
+```
+
+Now the curve shows home ownership as a function of age comparing Auckland and RoNZ.  The difference is getting bigger over time.
+
+Finally, we connect people up by cohort. 
+```{r, echo=FALSE}
+library(lattice)
+xyplot(pctown~agemid|where, groups=cohort,data=housing,type="b",pch=19,
+       xlab="age",ylab="% own or partly own")
+```
+If there were no trends in home ownership, the line for each birth cohort would overlap, as happens in the over-60s in RoNZ. At younger ages in RoNZ, and across the board in Auckland, people are less likely to own their home than people born five years earlier were at the same age. 
+
+We can verify that these differences are supported by strong statistical evidence; they aren't just due to chance
+```{r}
+anova(lm(pctown~agegp+factor(year)+where, data=housing))
+```
+
+and we can get estimates for all the differences
+```{r}
+coef(lm(pctown~agegp+factor(year)+where, data=housing))
+```
+
+Do you understand what all these numbers mean? You will need to by the end of the semester. 
+
+

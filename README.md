@@ -5,3 +5,5 @@ Two introductory exampes of R Markdown and various graphics and modelling featur
 * Owning vs renting homes, by age, period, and cohort, for Auckland and the rest of NZ: housing-agecohort.csv, lab1-housing.Rmd (http://www.statschat.org.nz/2016/02/24/home-ownership-comparisons/)
 * Impact of 'crushing' law on car-racing crashes: racing-crashes.csv, lab1-crashes.Rmd (http://www.statschat.org.nz/2016/02/21/crushing-and-crashing/)
 
+Weather, pollution, and mortality in Chicago. This has the initial exploration only; the modelling is left as an exercise for the student. chicago.csv, chicago.Rmd
+

@@ -1,0 +1,74 @@
+---
+title: "Weather and death"
+author: "Thomas Lumley"
+date: "10 March 2016"
+output: html_document
+---
+## Intro
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+chicago <- read.csv("~/chicago.csv")
+```
+
+Today we are looking at daily data on weather, air pollution, and "non-accidental death"" in Chicago, US. *Non-accidental* doesn't mean *deliberate*, it means all causes except accidents, and so is mostly heart disease, cancer, or pneumonia.
+
+The data come from the NMMAPS air pollution research project at Johns Hopkins University in the US. First, look at the variables
+```{r}
+names(chicago)
+```
+
+The variables are `date` (date), `time` (counting from 1), `year`, `month`, `doy` (day of year), `dow` (day of week), `death` (number of non-accidental deaths), `cvd` (number of deaths from cardiovascular [heart] causes), `resp` (number of deaths from respiratory causes), `temp` (average of maximum and minimum temperature for the day), `dptp` (dewpoint temperature: the temperature at which the humidity would be 100%), `rhum` (relative humidity, average of max and min) `pm10` (concentration of particulate air pollution), `o3` (concentration of ozone in the air).
+
+Now look at the data
+```{r}
+head(chicago)
+str(chicago)
+```
+
+We need to fix the `date` variable
+```{r}
+chicago$Date <- as.Date(as.character(chicago$date))
+str(chicago)
+```
+
+First, is the `death` variable reasonable?
+```{r}
+summary(chicago$death)
+```
+The typical values are between 100 and 125. The population of the Chicago area used here was 5.1 million, so that's something like `r round(5.1e6/110/365)` years for everyone to die, which is of the right order of magnitude given that we're leaving out some deaths. We can also check the temperatures
+```{r}
+summary(chicago$temp)
+```
+The range from -27C to 33C looks a bit implausible for temperature averaged throughout the day, but Chicago is really like that. 
+```{r}
+summary(chicago$dptp)
+```
+That can't be right. The obvious possibility is that dewpoint is in strange US degrees rather than ordinary civilised Celsius
+```{r}
+plot(temp~I((dptp-32)*5/9),data=chicago)
+abline(0,1,col="red",lwd=2)
+```
+
+That's plausible. Temperature is always above or basically equal to dewpoint, which it should be. Let's fix it.
+```{r}
+chicago$dptpC <- (chicago$dptp-32)*5/9
+```
+
+Now, plot the `deaths` variable against temperature and against time
+```{r}
+plot(death~temp,data=chicago)
+plot(death~Date, data=chicago, type="l")
+```
+
+There's an outlier. What should we do with it?
+
+## Tasks
+
+1. Fit a Poisson regression with number of deaths as outcome and with same-day temperature and relative humidity predictors. 
+2. Does dewpoint temperature on its own do as well as temperature and humidity?
+3. Look at *season* as an additional predictor.
+4. How much difference does it make if you use linear regression on log counts instead?
+5. For overachievers: look at better ways of drawing scatterplots with large data sets, either using partially transparent colours (eg `#FF000030` is 20% opaque bright red) or using hexagonal binning in the `hexbin` package.
